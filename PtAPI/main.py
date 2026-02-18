@@ -17,12 +17,12 @@ load_dotenv()
 
 
 # Criar tabelas ao iniciar
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     # Startup
-#     criar_tabelas()
-#     yield
-#     # Shutdown (opcional)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    criar_tabelas()
+    yield
+    # Shutdown (opcional)
 
 
 # Inicializar app com suporte a rate limit
@@ -60,6 +60,7 @@ app.add_middleware(
 # app.add_exception_handler(RateLimitExceeded, lambda request, exc: {"detail": "Rate limit exceeded"})
 
 # Incluir rotas
+# Segurança: rotas públicas = login e cadastro; demais rotas exigem Bearer JWT (obter_usuario_atual)
 app.include_router(auth_router)
 app.include_router(requisicao_router)
 app.include_router(imovel_router)

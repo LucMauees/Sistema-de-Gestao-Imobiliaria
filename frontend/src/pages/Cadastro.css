@@ -1,0 +1,64 @@
+/* Página de registro - layout e card */
+.cadastro-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.75rem, 4vw, 1.5rem);
+  background: linear-gradient(160deg, var(--color-surface) 0%, var(--color-bg) 50%, var(--color-bege-escuro) 100%);
+  overflow-y: auto;
+}
+
+.cadastro-page > .cadastro-card {
+  flex-shrink: 0;
+  margin: auto;
+  width: 100%;
+  max-width: 640px;
+  min-width: 0;
+}
+
+/* Header do card */
+.cadastro-header {
+  text-align: center;
+}
+
+.cadastro-header .cadastro-icon {
+  font-size: clamp(2rem, 5vw, 2.5rem);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* Grid do formulário - 2 colunas iguais, alinhamento consistente */
+.cadastro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
+  align-items: start;
+}
+
+.cadastro-grid > * {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Campo "Serviço prestado" ocupa a linha inteira */
+.cadastro-grid .cadastro-field-full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .cadastro-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cadastro-grid .cadastro-field-full {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 380px) {
+  .cadastro-page .mantine-Paper-root {
+    padding: 1rem;
+  }
+}

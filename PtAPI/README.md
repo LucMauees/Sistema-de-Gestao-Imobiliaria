@@ -11,10 +11,11 @@ PtAPI/
 │   └── db.py              # 🔌 Engine, SessionLocal, Base, get_db
 ├── models/
 │   ├── __init__.py        # Imports centralizados
-│   ├── usuario.py         # Usuario (simples, sem herança)
 │   ├── cliente.py         # Cliente, ClienteFisica, ClienteJuridica
-│   ├── socio.py           # SocioRepresentante
-│   └── contratos.py       # Contratos, Imovel, Contratado
+│   ├── contratado.py     # Contratado
+│   ├── contrato.py        # Contratos
+│   ├── imovel.py          # Imovel, ImovelUnidade, RegistroMatricula, ContaServico
+│   └── socio.py           # SocioRepresentante
 ├── routes/
 │   ├── __init__.py
 │   ├── auth.py            # POST /CadastroUsuarios, GET /usuarios

@@ -9,8 +9,8 @@ from slowapi.util import get_remote_address
 
 from config.db import SessionLocal, get_db
 from config.auth import criar_token, obter_usuario_atual
-from models.usuario import Usuario
-from schemas.usuario_schema import UsuarioCreate, UsuarioResponse, UsuarioLogin, TokenResponse
+from models.contratado import Contratado
+from schemas.contratado_schema import ContratadoCreate, ContratadoResponse, ContratadoLogin, TokenResponse
 
 # Configuração de logging
 logger = logging.getLogger(__name__)
@@ -39,58 +39,54 @@ def log_cadastro(email: str, status_code: int, detalhes: str = ""):
     logger.info(f"Cadastro - Email: {email[:3]}***@***.*** | Status: {status_code} | {detalhes}")
 
 
-@auth_router.post("/CadastroUsuarios", status_code=201, response_model=UsuarioResponse)
+@auth_router.post("/CadastroUsuarios", status_code=201, response_model=ContratadoResponse)
 # @limiter.limit("5/minute")
-def criar_usuario(request: Request, payload: UsuarioCreate, db=Depends(get_db)):
+def criar_usuario(request: Request, payload: ContratadoCreate, db=Depends(get_db)):
     """
-    ✅ Cria novo usuário com:
+    Cria novo contratado (usuário do sistema) com:
     - Hash de senha (argon2)
     - Validação completa de payload
     - Email normalizado
-    - Rate limit (5 por minuto)
-    - Log seguro (sem senha)
     """
     try:
         email_normalizado = payload.email.lower().strip()
         
         # Verificar se email já existe
-        usuario_existente = db.query(Usuario).filter(Usuario.email == email_normalizado).first()
-        if usuario_existente:
+        existente = db.query(Contratado).filter(Contratado.email == email_normalizado).first()
+        if existente:
             log_cadastro(email_normalizado, 400, "Email duplicado")
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email já cadastrado")
         
         # Verificar se CPF já existe
-        cpf_existente = db.query(Usuario).filter(Usuario.cpf == payload.cpf).first()
+        cpf_existente = db.query(Contratado).filter(Contratado.cpf == payload.cpf).first()
         if cpf_existente:
             log_cadastro(email_normalizado, 400, "CPF duplicado")
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="CPF já cadastrado")
         
-        # Hash da senha (argon2)
         senha_hash = hash_senha(payload.senha)
         
-        # Criar novo usuário
-        usuario = Usuario(
+        contratado = Contratado(
             nome=payload.nome,
             senha=senha_hash,
             email=email_normalizado,
             cpf=payload.cpf,
             rg=payload.rg,
-            data_de_nascimento=payload.data_de_nascimento
+            data_de_nascimento=payload.data_de_nascimento,
+            servico=payload.servico
         )
         
-        db.add(usuario)
+        db.add(contratado)
         db.commit()
-        db.refresh(usuario)
+        db.refresh(contratado)
         
-        # Log de sucesso sem dados sensíveis
-        log_cadastro(email_normalizado, 201, "Usuário criado com sucesso")
+        log_cadastro(email_normalizado, 201, "Contratado criado com sucesso")
         
-        # Retorno com apenas dados públicos
-        return UsuarioResponse(
-            id=usuario.id,
-            nome=usuario.nome,
-            email=usuario.email,
-            cpf=usuario.cpf
+        return ContratadoResponse(
+            id=contratado.id,
+            nome=contratado.nome,
+            email=contratado.email,
+            cpf=contratado.cpf,
+            servico=contratado.servico
         )
     except HTTPException:
         raise
@@ -105,38 +101,29 @@ def criar_usuario(request: Request, payload: UsuarioCreate, db=Depends(get_db)):
 
 
 @auth_router.post("/login", response_model=TokenResponse, status_code=200)
-def login(payload: UsuarioLogin, db=Depends(get_db)):
+def login(payload: ContratadoLogin, db=Depends(get_db)):
     """
-    Autentica um usuário e retorna um token JWT.
-    
-    Requer:
-    - email: Email do usuário
-    - senha: Senha do usuário
-    
-    Retorna:
-    - access_token: Token JWT para autenticação
-    - token_type: Tipo do token (bearer)
+    Autentica um contratado (usuário do sistema) e retorna um token JWT.
     """
     try:
         email_normalizado = payload.email.lower().strip()
-        usuario = db.query(Usuario).filter(Usuario.email == email_normalizado).first()
+        contratado = db.query(Contratado).filter(Contratado.email == email_normalizado).first()
         
-        if not usuario:
+        if not contratado:
             logger.warning(f"Tentativa de login com email inexistente: {email_normalizado[:3]}***")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Email ou senha incorretos"
             )
         
-        if not verificar_senha(payload.senha, usuario.senha):
+        if not verificar_senha(payload.senha, contratado.senha):
             logger.warning(f"Tentativa de login com senha incorreta: {email_normalizado[:3]}***")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Email ou senha incorretos"
             )
         
-        # Criar token JWT
-        access_token = criar_token(usuario.id)
+        access_token = criar_token(contratado.id)
         logger.info(f"Login bem-sucedido: {email_normalizado[:3]}***")
         
         return TokenResponse(access_token=access_token, token_type="bearer")
@@ -151,33 +138,27 @@ def login(payload: UsuarioLogin, db=Depends(get_db)):
         )
 
 
-@auth_router.get("/usuarios", response_model=List[UsuarioResponse])
+@auth_router.get("/usuarios", response_model=List[ContratadoResponse])
 def listar_usuarios(
     skip: int = Query(0, ge=0, description="Número de registros para pular"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros"),
     db=Depends(get_db),
-    usuario_atual: Usuario = Depends(obter_usuario_atual)
+    usuario_atual: Contratado = Depends(obter_usuario_atual)
 ):
     """
-    Lista usuários cadastrados (requer autenticação).
-    
-    Esta rota requer autenticação via token JWT.
-    Envie o token no header: Authorization: Bearer <token>
-    
-    Parâmetros:
-    - skip: Número de registros para pular (paginação)
-    - limit: Número máximo de registros a retornar (máximo 1000)
+    Lista contratados (usuários do sistema). Requer autenticação via token JWT.
     """
     try:
-        usuarios = db.query(Usuario).offset(skip).limit(limit).all()
+        contratados = db.query(Contratado).offset(skip).limit(limit).all()
         return [
-            UsuarioResponse(
-                id=u.id,
-                nome=u.nome,
-                email=u.email,
-                cpf=u.cpf
+            ContratadoResponse(
+                id=c.id,
+                nome=c.nome,
+                email=c.email,
+                cpf=c.cpf,
+                servico=c.servico
             )
-            for u in usuarios
+            for c in contratados
         ]
     except Exception as e:
         logger.exception(f"Erro ao listar usuários: {str(e)}")

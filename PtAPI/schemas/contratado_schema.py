@@ -1,61 +1,52 @@
-"""Schemas Pydantic para Usuario"""
+"""Schemas Pydantic para Contratado (usuários do sistema)"""
 from pydantic import BaseModel, EmailStr, validator, Field
 from datetime import date
 import re
 
 
-class UsuarioCreate(BaseModel):
-    nome: str = Field(..., min_length=3, max_length=150, description="Nome do usuário")
+class ContratadoCreate(BaseModel):
+    nome: str = Field(..., min_length=3, max_length=150, description="Nome do contratado")
     senha: str = Field(..., min_length=8, max_length=255, description="Senha com mínimo 8 caracteres")
     email: EmailStr
     cpf: str = Field(..., pattern=r'^\d{11}$', description="CPF com 11 dígitos")
     rg: str = Field(..., min_length=5, max_length=20, description="RG")
     data_de_nascimento: date
-    
+    servico: str = Field(..., min_length=1, max_length=150, description="Serviço prestado")
+
     @validator('email')
     def normalize_email(cls, v):
         """Normaliza email: minúsculas e sem espaços"""
         return v.lower().strip()
-    
+
     @validator('cpf')
     def validate_cpf_format(cls, v):
         """Valida formato e dígitos verificadores do CPF"""
-        # Remove caracteres não numéricos
         cpf = ''.join(filter(str.isdigit, v))
-        
-        # Verifica se tem 11 dígitos
         if len(cpf) != 11:
             raise ValueError('CPF deve conter exatamente 11 dígitos')
-        
-        # Verifica se todos os dígitos são iguais (CPF inválido)
         if cpf == cpf[0] * 11:
             raise ValueError('CPF inválido: todos os dígitos são iguais')
-        
-        # Valida primeiro dígito verificador
         soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
         digito1 = (soma * 10) % 11
         if digito1 == 10:
             digito1 = 0
         if digito1 != int(cpf[9]):
             raise ValueError('CPF inválido: primeiro dígito verificador incorreto')
-        
-        # Valida segundo dígito verificador
         soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
         digito2 = (soma * 10) % 11
         if digito2 == 10:
             digito2 = 0
         if digito2 != int(cpf[10]):
             raise ValueError('CPF inválido: segundo dígito verificador incorreto')
-        
         return cpf
-    
+
     @validator('nome')
     def validate_nome(cls, v):
         """Valida nome: apenas letras e espaços"""
         if not re.match(r'^[a-zA-ZáéíóúàâêôãõçÁÉÍÓÚÀÂÊÔÃÕÇ\s]+$', v):
             raise ValueError('Nome deve conter apenas letras')
         return v.strip()
-    
+
     @validator('senha')
     def validate_senha(cls, v):
         """Valida força da senha"""
@@ -68,21 +59,22 @@ class UsuarioCreate(BaseModel):
         return v
 
 
-class UsuarioResponse(BaseModel):
-    """Resposta com apenas dados públicos"""
+class ContratadoResponse(BaseModel):
+    """Resposta com dados públicos do contratado"""
     id: int
     nome: str
     email: str
-    cpf: str  # CPF completo (considerar mascarar em produção)
-    
+    cpf: str
+    servico: str
+
     class Config:
         from_attributes = True
 
 
-class UsuarioLogin(BaseModel):
-    """Schema para login de usuário"""
+class ContratadoLogin(BaseModel):
+    """Schema para login (contratado = usuário do sistema)"""
     email: EmailStr
-    senha: str = Field(..., min_length=1, description="Senha do usuário")
+    senha: str = Field(..., min_length=1, description="Senha")
 
 
 class TokenResponse(BaseModel):

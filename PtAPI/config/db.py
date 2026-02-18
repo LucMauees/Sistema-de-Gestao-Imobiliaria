@@ -22,10 +22,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db)
 def criar_tabelas():
     """Cria todas as tabelas no banco de dados"""
     # Importar modelos AQUI para registrar no metadata
-    from models.usuario import Usuario
     from models.cliente import Cliente, ClienteFisica, ClienteJuridica
+    from models.contratado import Contratado
+    from models.contrato import Contratos
+    from models.imovel import Imovel, ImovelUnidade, RegistroMatricula, ContaServico
     from models.socio import SocioRepresentante
-    from models.contratos import Contratos, Imovel, Contratado
     
     Base.metadata.create_all(bind=db)
     print(f"✅ Tabelas criadas: {list(Base.metadata.tables.keys())}")

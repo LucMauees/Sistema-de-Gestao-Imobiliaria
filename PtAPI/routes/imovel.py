@@ -5,9 +5,11 @@ from typing import List
 import io
 
 from config.db import get_db
+from config.auth import obter_usuario_atual
+from models.contratado import Contratado
 from sqlalchemy.orm import Session
 
-from models.contratos import Imovel, ImovelUnidade, RegistroMatricula, ContaServico
+from models.imovel import Imovel, ImovelUnidade, RegistroMatricula, ContaServico
 from schemas.imovel_schema import (
     ImovelCreate, ImovelResponse, ImovelUnidadeCreate, ImovelUnidadeResponse,
     RegistroMatriculaCreate, RegistroMatriculaResponse, ContaServicoCreate, ContaServicoResponse,
@@ -18,7 +20,11 @@ imovel_router = APIRouter(prefix="/imoveis", tags=["imoveis"])
 
 
 @imovel_router.post("/", response_model=ImovelResponse, status_code=201)
-def criar_imovel(payload: ImovelCreate, db: Session = Depends(get_db)):
+def criar_imovel(
+    payload: ImovelCreate,
+    db: Session = Depends(get_db),
+    _usuario: Contratado = Depends(obter_usuario_atual),
+):
     imovel = Imovel(
         rua=payload.rua,
         numero=payload.numero,
@@ -37,7 +43,11 @@ def criar_imovel(payload: ImovelCreate, db: Session = Depends(get_db)):
 
 
 @imovel_router.get("/{imovel_id}", response_model=ImovelResponse)
-def obter_imovel(imovel_id: int, db: Session = Depends(get_db)):
+def obter_imovel(
+    imovel_id: int,
+    db: Session = Depends(get_db),
+    _usuario: Contratado = Depends(obter_usuario_atual),
+):
     imovel = db.query(Imovel).filter(Imovel.id == imovel_id).first()
     if not imovel:
         raise HTTPException(status_code=404, detail="Imóvel não encontrado")
@@ -45,7 +55,12 @@ def obter_imovel(imovel_id: int, db: Session = Depends(get_db)):
 
 
 @imovel_router.post("/{imovel_id}/unidades", response_model=ImovelUnidadeResponse, status_code=201)
-def criar_unidade(imovel_id: int, payload: ImovelUnidadeCreate, db: Session = Depends(get_db)):
+def criar_unidade(
+    imovel_id: int,
+    payload: ImovelUnidadeCreate,
+    db: Session = Depends(get_db),
+    _usuario: Contratado = Depends(obter_usuario_atual),
+):
     imovel = db.query(Imovel).filter(Imovel.id == imovel_id).first()
     if not imovel:
         raise HTTPException(status_code=404, detail="Imóvel não encontrado")
@@ -63,7 +78,12 @@ def criar_unidade(imovel_id: int, payload: ImovelUnidadeCreate, db: Session = De
 
 
 @imovel_router.post("/{imovel_id}/registros", response_model=RegistroMatriculaResponse, status_code=201)
-def criar_registro(imovel_id: int, payload: RegistroMatriculaCreate, db: Session = Depends(get_db)):
+def criar_registro(
+    imovel_id: int,
+    payload: RegistroMatriculaCreate,
+    db: Session = Depends(get_db),
+    _usuario: Contratado = Depends(obter_usuario_atual),
+):
     imovel = db.query(Imovel).filter(Imovel.id == imovel_id).first()
     if not imovel:
         raise HTTPException(status_code=404, detail="Imóvel não encontrado")
@@ -85,7 +105,12 @@ def criar_registro(imovel_id: int, payload: RegistroMatriculaCreate, db: Session
 
 
 @imovel_router.post("/{imovel_id}/contas", response_model=ContaServicoResponse, status_code=201)
-def criar_conta(imovel_id: int, payload: ContaServicoCreate, db: Session = Depends(get_db)):
+def criar_conta(
+    imovel_id: int,
+    payload: ContaServicoCreate,
+    db: Session = Depends(get_db),
+    _usuario: Contratado = Depends(obter_usuario_atual),
+):
     imovel = db.query(Imovel).filter(Imovel.id == imovel_id).first()
     if not imovel:
         raise HTTPException(status_code=404, detail="Imóvel não encontrado")
@@ -104,7 +129,12 @@ def criar_conta(imovel_id: int, payload: ContaServicoCreate, db: Session = Depen
 
 
 @imovel_router.post("/{imovel_id}/iptu/calc", response_model=IPTUCalculationResponse)
-def calcular_iptu(imovel_id: int, payload: IPTUCalculationRequest, db: Session = Depends(get_db)):
+def calcular_iptu(
+    imovel_id: int,
+    payload: IPTUCalculationRequest,
+    db: Session = Depends(get_db),
+    _usuario: Contratado = Depends(obter_usuario_atual),
+):
     imovel = db.query(Imovel).filter(Imovel.id == imovel_id).first()
     if not imovel:
         raise HTTPException(status_code=404, detail="Imóvel não encontrado")
@@ -114,7 +144,14 @@ def calcular_iptu(imovel_id: int, payload: IPTUCalculationRequest, db: Session =
 
 
 @imovel_router.get("/{imovel_id}/unidades/{unidade_id}/iptu/pdf")
-def gerar_pdf_iptu(imovel_id: int, unidade_id: int, valor_total_iptu: float = Query(...), desconto_cota_unica: float = Query(0.0), db: Session = Depends(get_db)):
+def gerar_pdf_iptu(
+    imovel_id: int,
+    unidade_id: int,
+    valor_total_iptu: float = Query(...),
+    desconto_cota_unica: float = Query(0.0),
+    db: Session = Depends(get_db),
+    _usuario: Contratado = Depends(obter_usuario_atual),
+):
     imovel = db.query(Imovel).filter(Imovel.id == imovel_id).first()
     if not imovel:
         raise HTTPException(status_code=404, detail="Imóvel não encontrado")

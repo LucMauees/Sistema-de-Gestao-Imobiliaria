@@ -23,10 +23,11 @@ if config.config_file_name is not None:
 from config.db import Base
 
 # Importar TODOS os modelos para registrar no metadata
-from models.usuario import Usuario
 from models.cliente import Cliente, ClienteFisica, ClienteJuridica
+from models.contratado import Contratado
+from models.contrato import Contratos
+from models.imovel import Imovel, ImovelUnidade, RegistroMatricula, ContaServico
 from models.socio import SocioRepresentante
-from models.contratos import Contratos, Imovel, Contratado
 
 # Usar o metadata da Base que contém todos os modelos
 target_metadata = Base.metadata
